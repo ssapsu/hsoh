@@ -1,235 +1,131 @@
 #include <stdio.h>
-#include <stdlib.h>
 #include <string.h>
-#define S_SIZE 50
-#define YES 1
-#define NO 0
+#include <stdlib.h>
 
+#define SIZE 40000
+#define LN_SIZE 20
+#define SN_SIZE 100
 
-typedef struct BOOK_LIST_NODE
+#define BI_FILE "seoul_bus_info.txt"
+
+typedef struct location
 {
-    char title[S_SIZE];
-    int year;
-    struct BOOK_LIST_NODE* link;
-    int is_checked_out;
-} BOOK_LIST_NODE;
+    double x;
+    double y;
+} _location;
 
-char buffer[S_SIZE];
-BOOK_LIST_NODE* list = NULL;
-BOOK_LIST_NODE* prev = NULL, * p, * next;
+typedef struct bus_data
+{
+    int line_id;
+    char line_name[LN_SIZE];
+    int order;
+    int link_id;
+    int station_id;
+    int ars_id;
+    char station_name[SN_SIZE];
+    _location loc;
+} _bus_data;
 
-void print_menu(void);                //메뉴판을 생성하는 함수
-void register_new_book(void);        //책을 등록하는 함수
-void check_out(void);                //책을 대출하는 함수
-void check_in(void);                //책을 반납하는 함수
-void print_book_list(void);            //책 리스트를 출력하는 함수
-void return_memory(void);            //메모리를 반납하는 함수
+void find_by_station_name(_bus_data* ptr_bus_info, int size);
+void find_by_line_name(_bus_data* ptr_bus_info, int size);
+
+_bus_data array_of_bus[SIZE];
 
 int main(void)
 {
-    int n = 0, get_num;
+    _bus_data* ptr_bus_info = NULL;
 
-    printf("연결형 리스트를 이용한 도서관리 프로그램\n");
+    int num_of_struct_array = 0;
+    char buffer[sizeof(_bus_data)];
+
+    int get_number = 0;
 
     /*
-        무한 반복문을 사용하기 위해 n의 초기값을 0으로 설정하였다. 나중에 사용자가 4를 입력할 시 n에 4를 대입하여
-        반복문을 탈출하도록 설정함.
-        사용자로부터 숫자를 받아와서 메뉴 0~4까지 선택할 수 있게 switch문을 사용하였다.
+        파일이 없을 때 생길 오류에 대비하여 예외처리
+    */
+    ptr_bus_info = fopen(BI_FILE, "rb");
+    if (ptr_bus_info == NULL)
+    {
+        fprintf(stderr, "%s 파일을 열 수 없습니다.\n", BI_FILE);
+        return 1;
+    }
+
+    /*
+        버퍼의 사이즈는 _bus_data 구조체 자료형의 크기로 설정, 따라서 한 줄 씩 읽어올 수 있다.
+        읽어온 후, array_of_bus라는 _bus_data 구조체 배열의 station_name과 line_name 멤버에 문자열을 복사한다.
     */
 
-    while (n != 4)
+    while (fgets(buffer, sizeof(buffer), ptr_bus_info))
     {
-        print_menu();
-        scanf("%d", &get_num);
-        getchar();
-        switch (get_num)
+        sscanf(buffer, "%[^','],%[^','],%[^','],%[^','],%[^','],%[^','],%[^','],%[^','],%d,%s,%d,%d,%d,%d,%s,%lf,%lf", &array_of_bus[num_of_struct_array].line_id, array_of_bus[num_of_struct_array].line_name, &array_of_bus[num_of_struct_array].order, &array_of_bus[num_of_struct_array].link_id, &array_of_bus[num_of_struct_array].station_id, &array_of_bus[num_of_struct_array].ars_id, array_of_bus[num_of_struct_array].station_name, &array_of_bus[num_of_struct_array].loc.x, &array_of_bus[num_of_struct_array].loc.y);
+        num_of_struct_array++;
+    }
+
+    /*
+        get_number 정수형 변수로 사용자로부터 정수를 받아와서 사용자가 선택할 수 있게 했다.
+        while문을 이용하여 무한반복을 하되, 사용자가 3을 넣으면 종료하도록 설정하였다.
+        이때, 동시에 파일을 닫도록 설정하였다.
+    */
+
+    while (get_number != 3)
+    {
+        printf("===================================\n");
+        printf(" 1. 정류장 정차 버스 찾기\n");
+        printf(" 2. 버스노선의 정차 정류장 찾기\n");
+        printf(" 3. 종료\n");
+        printf("===================================\n");
+        printf("정수값을 선택하시오: ");
+
+        scanf("%d", &get_number);
+
+        switch (get_number)
         {
-            case 0:
-            {
-                register_new_book();
-                break;
-            }
-            case 1:
-            {
-                check_out();
-                break;
-            }
-            case 2:
-            {
-                check_in();
-                break;
-            }
-            case 3:
-            {
-                print_book_list();
-                break;
-            }
-            case 4:
-            {
-                return_memory();
-                n = 4;
-                break;
-            }
-            default:
-            {
-                printf("잘못 입력하였습니다.\n");
-                break;
-            }
+        case 1:
+            find_by_station_name(array_of_bus, num_of_struct_array);
+            break;
+        case 2:
+            find_by_line_name(array_of_bus, num_of_struct_array);
+            break;
+        case 3:
+            fclose(ptr_bus_info);
+            break;
         }
     }
     return 0;
 }
 
-void print_menu()
-{
-    printf("\n");
-    printf("=====================\n");
-    printf("0. 신규 등록\n");
-    printf("1. 도서 대출\n");
-    printf("2. 도서 반납\n");
-    printf("3. 목록 출력\n");
-    printf("4. 종료\n");
-    printf("=====================\n");
-}
-
-void register_new_book()
-{
-    int year;
-    p = (BOOK_LIST_NODE*)malloc(sizeof(BOOK_LIST_NODE));
-
-    /*
-        오류가 날 것에 대비하여 예외처리를 해준다.
-    */
-
-    if (p == NULL)
-    {
-        printf("동적 메모리 할당 오류\n");
-        exit(1);
-    }
-
-    printf("등록할 책의 제목을 입력하시오: ");
-    scanf("%s",buffer);
-    getchar();
-    strcpy(p->title, buffer);
-
-    printf("책의 출판 연도를 입력하시오: ");
-    gets(buffer);
-
-    year = atoi(buffer);
-    p->year = year;
-    printf("%s\n를 성공적으로 등록하였습니다.\n", p->title);
-
-    p->is_checked_out = NO;
-    if (list == NULL)
-        list = p;
-    else
-        prev->link = p;
-    p->link = NULL;
-    prev = p;
-}
-
 /*
-    p의 값을 list의 주소로 받아와서 while문을 돌린다. 구조체 멤버들의 값을 가져오고 나면 p의 값을
-    다음 노드의 주소로 바꿔서 p가 NULL일 때까지 돌린다.
+    함수 find_by_station_name은 array_of_bus 배열의 주소와 num_of_struct_array를 받아온다.
+    사용자로부터 정류장이름을 받아올 get_station_name 캐릭터형 배열과, _bus_data형의 ptr을 선언하고 ptr_bus_info
+    즉, array_of_bus 배열의 주소를 받아온다.
+    for문을 사용해 ptr을 처음부터 끝까지 돌려준다.
+    이때, array_of_bus 배열의 station_name과 사용자로부터 입력받은 get_station_name이 같다면 출력 조건을 만족하도록 하여
+    출력하도록 설정하였다.
+    함수 find_by_line_name도 위 함수와 같은 방식을 채택하였다.
 */
 
-void print_book_list()
+void find_by_station_name(_bus_data* ptr_bus_info, int size)
 {
-    int order = 0;
-    p = list;
-    while (p != NULL)
-    {
-        printf("순서 %d, 출판연도 %d, 대출여부 %d, 제목 %s\n  \n",order, p->year,p->is_checked_out ,p->title );
-        order++;
-        p = p->link;
-    }
+    char get_station_name[SN_SIZE];
+    _bus_data* ptr=ptr_bus_info;
+
+    printf("정류장 이름을 입력하세요 (일부 명칭도 가능): ");
+    scanf("%s", get_station_name);
+
+    for (ptr; ptr < (ptr_bus_info+size); ptr++)
+        if(strstr(ptr->station_name, get_station_name)!=NULL)
+             printf("[%s] 정류소에 [%s] 버스가 정차합니다.\n", ptr->station_name, ptr->line_name);
 }
 
-/*
-    마찬가지로 check_in함수와 골자는 같다. 하지만 다음의 3가지 경우에 대해서 다음과 같이 진행함
-    1,2 의 경우 문자열 비교함수strcmp를 사용하여 리스트에서의 책 제목과 사용자로부터 입력받은 값이 같은지 확인하고
-    진행하였다.
-        1. 책을 대여하려고 했지만 책이 이미 대출된 경우
-            ->구조체 멤버 is_checked_out 이 참(1)인 경우 대출중임을 출력하고 반복문 탈출
-        2. 대출되지 않은 책을 대여할 수 있게 된 경우
-            ->구조체 멤버 is_checked_out 이 거짓(0)이므로 대출하였다는 말과 함께 is_checked_out 변수 값에 YES(1)를 대입하고 탈출
-        3. 사용자로부터 입력받은 책의 제목이 리스트에 없을 경우
-            ->while문을 끝마치고 나오기 전에 1,2의 조건이 실현되면 탈출하도록 설정하였으므로 존재하지 않는다는 문구를 출력하고 탈출
-*/
-
-void check_out()
+void find_by_line_name(_bus_data* ptr_bus_info, int size)
 {
-    printf("대여할 책의 제목을 입력하시오: ");
-    gets(buffer);
-    p = list;
-    while (p != NULL)
-    {
-        if (strcmp(p->title, buffer) == 0)
-        {
-            if (p->is_checked_out == YES)
-            {
-                printf("%s\n가 이미 대출중입니다.\n", buffer);
-                break;
-            }
-                else
-            {
-                printf("%s\n 를 대출에 성공하였습니다.\n", buffer);
-                p->is_checked_out=YES;
-                break;
-            }
-        }
-        p = p->link;
-    }
-    if (p == NULL)
-        printf("%s\n 가 존재하지 않습니다.\n", buffer);
-}
+    char get_line_name[LN_SIZE];
+    _bus_data* ptr = ptr_bus_info;
 
-/*
-    위 함수와 동일하게 먼저 사용자로부터 입력받은 문자열과 책 이름이 같은지 여부를 판단하고 만약 같다면 대출 여부를 따진 후
-    반복문을 탈출하도록 설정
-    책이 존재하지 않는 경우도 위의 주석 참고
-*/
+    printf("버스노선명을 입력하세요 :");
+    scanf("%s", get_line_name);
 
-void check_in()
-{
-    printf("반납할 책의 제목을 입력하시오: ");
-    p = list;
-    gets(buffer);
-    while (p != NULL)
-    {
-        if (strcmp(p->title, buffer) == 0)
-        {
-            if (p->is_checked_out == NO)
-            {
-                printf("%s\n는 대출중인 책이 아닙니다.\n\n", buffer);
-                break;
-            }
-            else
-            {
-                printf("%s\n 반납에 성공하였습니다.\n\n", buffer);
-                p->is_checked_out = NO;
-                break;
-            }
-        }
-        p = p->link;
-    }
-    if (p == NULL)
-        printf("%s\n 가 존재하지 않습니다.\n", buffer);
-}
-
-/*
-    p에 list 주소값을 할당하고 메모리 반납시킨 후, 다음 노드의 주소값을 p에 대입을 하여 p가 NULL일 때까지 수행하여
-    할당된 메모리 모두를 반납한다.
-*/
-
-void return_memory()
-{
-    p = list;
-    while (p != NULL)
-    {
-        next = p->link;
-        free(p);
-        p = next;
-    }
-    printf("메모리를 모두 반납하였습니다.\n");
+    for(ptr; ptr<(ptr_bus_info+size); ptr++)
+        if (strcmp(get_line_name, ptr->line_name) == 0)
+            printf("[%s] 버스가 [%s] 정류장에 정차합니다.\n", ptr->line_name, ptr->station_name);
 }
