@@ -1,27 +1,30 @@
 #include <stdio.h>
 #include <stdlib.h>
+#include <string.h>
 
 int main()
 {
-	int get_num;
-	double max;
-	double* grade=NULL;
-	double avg,sum=0;
+	int get_num,n=0;
+	char score[80];
+	int your_point=0,is_sequence=1;
 	scanf("%d", &get_num);
-	grade = (double*)malloc(get_num * sizeof(double));
-	for (int i=0; i < get_num; i++)
-		scanf("%lf", (grade + i));
-	if (grade == NULL) return -1;
-	max = *grade;
-	for (int i=0; i < get_num; i++)
-		if (max < *(grade + i))
-			max = *(grade + i);
-	for (int i=0; i < get_num; i++)
-		*(grade + i) = *(grade + i) * 100 / max;
-	for (int i=0; i < get_num; i++)
-		sum += *(grade + i);
-	avg = sum / get_num;
-	printf("%lf", avg);
-	free(grade);
+	while (n < get_num)
+	{
+		scanf("%s", score);
+		for (int j = 0; j < strlen(score); j++)
+		{
+			if (score[j] == 'O')
+			{
+				your_point += is_sequence;
+				if (score[j] == score[j + 1])
+					is_sequence++;
+				else
+					is_sequence = 1;
+			}
+		}
+		printf("%d\n", your_point);
+		your_point = 0;
+		n++;
+	}
 	return 0;
 }
