@@ -1,0 +1,27 @@
+#include <stdio.h>
+#include <stdlib.h>
+
+int main()
+{
+	int get_num;
+	double max;
+	double* grade=NULL;
+	double avg,sum=0;
+	scanf("%d", &get_num);
+	grade = (double*)malloc(get_num * sizeof(double));
+	for (int i=0; i < get_num; i++)
+		scanf("%lf", (grade + i));
+	if (grade == NULL) return -1;
+	max = *grade;
+	for (int i=0; i < get_num; i++)
+		if (max < *(grade + i))
+			max = *(grade + i);
+	for (int i=0; i < get_num; i++)
+		*(grade + i) = *(grade + i) * 100 / max;
+	for (int i=0; i < get_num; i++)
+		sum += *(grade + i);
+	avg = sum / get_num;
+	printf("%lf", avg);
+	free(grade);
+	return 0;
+} 
